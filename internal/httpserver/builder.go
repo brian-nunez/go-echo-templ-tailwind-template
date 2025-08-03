@@ -60,6 +60,19 @@ func (b *ServerBuilder) WithNotFound() *ServerBuilder {
 	return b
 }
 
+func (b *ServerBuilder) WithStaticAssets(directories map[string]string) *ServerBuilder {
+	for path, dir := range directories {
+		if dir == "" {
+
+			continue
+		}
+
+		b.e.Static(path, dir)
+	}
+
+	return b
+}
+
 func (b *ServerBuilder) Build() *echo.Echo {
 	return b.e
 }

@@ -11,8 +11,13 @@ type Server interface {
 	Shutdown(ctx context.Context) error
 }
 
-func Bootstrap() Server {
+type BootstrapConfig struct {
+	StaticDirectories map[string]string
+}
+
+func Bootstrap(config BootstrapConfig) Server {
 	server := New().
+		WithStaticAssets(config.StaticDirectories).
 		WithDefaultMiddleware().
 		WithErrorHandler().
 		WithRoutes(v1.RegisterRoutes).
