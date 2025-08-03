@@ -13,7 +13,11 @@ import (
 )
 
 func main() {
-	server := httpserver.Bootstrap()
+	server := httpserver.Bootstrap(httpserver.BootstrapConfig{
+		StaticDirectories: map[string]string{
+			"/assets": "./assets",
+		},
+	})
 
 	PORT := os.Getenv("PORT")
 	if PORT == "" {

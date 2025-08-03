@@ -5,6 +5,8 @@ go 1.23.0
 toolchain go1.23.11
 
 require (
+	github.com/Oudwins/tailwind-merge-go v0.2.1
+	github.com/a-h/templ v0.3.924
 	github.com/labstack/echo/v4 v4.13.4
 )
 
