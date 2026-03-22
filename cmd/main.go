@@ -10,12 +10,23 @@ import (
 	"time"
 
 	"github.com/brian-nunez/go-echo-starter-template/internal/httpserver"
+	"github.com/brian-nunez/go-echo-starter-template/internal/observability"
 )
 
 func main() {
+	otelConfig := observability.LoadConfigFromEnv()
+	telemetry, err := observability.Init(context.Background(), otelConfig, log.Default())
+	if err != nil {
+		log.Fatalf("could not initialize observability: %v", err)
+	}
+
 	server := httpserver.Bootstrap(httpserver.BootstrapConfig{
 		StaticDirectories: map[string]string{
 			"/assets": "./assets",
+		},
+		Observability: httpserver.ObservabilityConfig{
+			ServiceName:    otelConfig.ServiceName,
+			TracingEnabled: otelConfig.Enabled,
 		},
 	})
 
@@ -40,9 +51,14 @@ func main() {
 	defer cancel()
 
 	log.Println("Shutting down server...")
-	err := server.Shutdown(ctx)
+	err = server.Shutdown(ctx)
 	if err != nil {
 		log.Fatalf("Server shutdown failed: %v", err)
 	}
+
+	if err = telemetry.Shutdown(ctx); err != nil {
+		log.Fatalf("Observability shutdown failed: %v", err)
+	}
+
 	log.Println("Server exited cleanly")
 }

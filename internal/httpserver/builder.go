@@ -4,6 +4,9 @@ import (
 	"github.com/brian-nunez/go-echo-starter-template/internal/handlers/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ServerBuilder struct {
@@ -16,10 +19,32 @@ func New() *ServerBuilder {
 	}
 }
 
-func (b *ServerBuilder) WithDefaultMiddleware() *ServerBuilder {
+func (b *ServerBuilder) WithDefaultMiddleware(config ObservabilityConfig) *ServerBuilder {
 	b.e.Use(middleware.Recover())
 	b.e.Use(middleware.RequestID())
 	b.e.Use(middleware.CORS())
+
+	if config.TracingEnabled {
+		b.e.Use(otelecho.Middleware(
+			config.resolvedServiceName(),
+			otelecho.WithPropagators(otel.GetTextMapPropagator()),
+			otelecho.WithTracerProvider(otel.GetTracerProvider()),
+		))
+
+		// Automatically expose trace correlation headers on all responses.
+		b.e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				spanContext := trace.SpanContextFromContext(c.Request().Context())
+				if spanContext.IsValid() {
+					c.Response().Header().Set("X-Trace-ID", spanContext.TraceID().String())
+					c.Response().Header().Set("X-Span-ID", spanContext.SpanID().String())
+				}
+
+				return next(c)
+			}
+		})
+	}
+
 	b.e.Use(middleware.Logger())
 
 	return b
