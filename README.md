@@ -14,6 +14,7 @@ This project gives you a solid foundation to build from — with preconfigured d
 - Utility-first styling with TailwindCSS
 - Templ UI support preconfigured (All components are installed)
 - Clean routing with Echo (My favorite Go web framework)
+- OpenTelemetry tracing middleware for all routes
 - Centralized error handling
 - Graceful shutdown
 - Makefile-driven dev workflow
@@ -37,7 +38,8 @@ This project gives you a solid foundation to build from — with preconfigured d
 │   ├── handlers/       # HTTP handlers
 │   │   ├── errors/     # Centralized error response logic
 │   │   └── v1/         # Versioned routing
-│   └── httpserver/     # Server wiring & middleware
+│   ├── httpserver/     # Server wiring & middleware
+│   └── observability/  # OTEL setup + span-aware logging helper
 ├── .templui.json       # Templ UI config
 ├── Makefile            # Dev commands
 ```
@@ -66,8 +68,42 @@ cd go-echo-templ-tailwind-template
 make dev
 ```
 
+## OpenTelemetry (Simple Setup)
+
+Tracing is enabled for all routes by one Echo middleware in `internal/httpserver`.
+Logs are exported over OTLP/gRPC and can be emitted with:
+- `observability.LogDebug(ctx, "...")`
+- `observability.LogInfo(ctx, "...")`
+- `observability.LogWarn(ctx, "...")`
+- `observability.LogError(ctx, "...")`
+
+Environment variables:
+
+```bash
+OTEL_ENABLED=true
+OTEL_SERVICE_NAME=go-echo-templ-tailwind-template
+OTEL_SERVICE_VERSION=
+OTEL_ENVIRONMENT=development
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+OTEL_EXPORTER_OTLP_INSECURE=true
+OTEL_FAIL_FAST=false
+```
+
+Local LGTM:
+
+```bash
+docker run --rm -p 3000:3000 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm:latest
+```
+
+Span-aware log helpers:
+
+```go
+observability.LogInfo(c.Request().Context(), "health_check: service is running")
+observability.LogWarn(c.Request().Context(), "degraded_dependency", "dependency", "redis")
+observability.LogError(c.Request().Context(), "failed_to_process", "error", err.Error())
+```
+
 ## Reach out if you have questions or just want to chat!
 
 - [GitHub](https://www.github.com/brian-nunez)
 - [LinkedIn](https://www.linkedin.com/in/brianjnunez)
-

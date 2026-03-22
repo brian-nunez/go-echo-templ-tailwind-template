@@ -13,12 +13,13 @@ type Server interface {
 
 type BootstrapConfig struct {
 	StaticDirectories map[string]string
+	Observability     ObservabilityConfig
 }
 
 func Bootstrap(config BootstrapConfig) Server {
 	server := New().
 		WithStaticAssets(config.StaticDirectories).
-		WithDefaultMiddleware().
+		WithDefaultMiddleware(config.Observability).
 		WithErrorHandler().
 		WithRoutes(v1.RegisterRoutes).
 		WithNotFound().
